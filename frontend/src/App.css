@@ -484,3 +484,274 @@ footer {
     font-size: 25px;
   }
 }
+
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.expense-form label {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.expense-form input,
+.expense-form select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e6e4ef;
+  border-radius: 10px;
+  background: #fcfcff;
+  color: #20233a;
+  outline: none;
+}
+
+.expense-form input:focus,
+.expense-form select:focus {
+  border-color: #8068e8;
+  box-shadow: 0 0 0 3px #8068e81c;
+}
+
+.expense-form button {
+  margin-top: 7px;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  background: #7057e8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.expense-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.expense-history {
+  margin-top: 22px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
+
+.expense-table th,
+.expense-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #eeeef5;
+  white-space: nowrap;
+}
+
+.expense-table th {
+  color: #85859a;
+  font-weight: 600;
+}
+
+.category-pill {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #f0edff;
+  color: #7057e8;
+  font-size: 11px;
+}
+
+.expense-amount {
+  font-weight: 700;
+}
+
+.delete-button {
+  padding: 7px 10px;
+  border: 1px solid #f2caca;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #c03939;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background: #ffe5e5;
+}
+
+.error-message {
+  color: #c03939;
+}
+
+.negative-balance {
+  color: #c03939;
+}
+
+.nav-item {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+@media (max-width: 680px) {
+  .expense-table {
+    min-width: 560px;
+  }
+}
+
+/* Expense tracking additions */
+html {
+  scroll-behavior: smooth;
+}
+
+a.nav-item {
+  text-decoration: none;
+}
+
+.error-message {
+  color: #c0394b;
+  background: #fff0f1;
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+
+.budget-panel select,
+.filter-row select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #e6e4ef;
+  border-radius: 11px;
+  outline: none;
+  background: #fcfcff;
+  color: #20233a;
+}
+
+.budget-panel select:focus,
+.filter-row select:focus {
+  border-color: #8068e8;
+}
+
+.expense-history {
+  margin-top: 22px;
+}
+
+.history-heading {
+  align-items: center;
+}
+
+.secondary-button {
+  border: 1px solid #e6e4ef;
+  background: white;
+  color: #7057e8;
+  border-radius: 10px;
+  padding: 10px 13px;
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.filter-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.filter-row label {
+  font-size: 12px;
+  color: #85859a;
+}
+
+.filter-row select {
+  width: auto;
+  min-width: 160px;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.expense-table th {
+  padding: 13px 12px;
+  color: #89899d;
+  font-size: 11px;
+  font-weight: 700;
+  background: #faf9fe;
+  white-space: nowrap;
+}
+
+.expense-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #f0eff6;
+  white-space: nowrap;
+}
+
+.expense-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.category-pill {
+  display: inline-block;
+  background: #f0edff;
+  color: #7057e8;
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.amount-cell {
+  font-weight: 700;
+}
+
+.delete-button {
+  border: 1px solid #f1d5d8;
+  background: #fff5f5;
+  color: #c0394b;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.delete-button:hover {
+  background: #ffe6e8;
+}
+
+@media (max-width: 680px) {
+  .filter-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .filter-row select {
+    width: 100%;
+  }
+
+  .history-heading {
+    align-items: flex-start;
+  }
+
+  .expense-table {
+    font-size: 12px;
+  }
+
+  .expense-table th,
+  .expense-table td {
+    padding: 12px 9px;
+  }
+}
