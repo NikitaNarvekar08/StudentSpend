@@ -1,6 +1,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 
 const BUDGET_API = "http://localhost:5000/api/budget";
 const EXPENSE_API = "http://localhost:5000/api/expenses";
@@ -83,6 +96,58 @@ function App() {
   );
 
   const remainingMoney = pocketMoney - totalExpenses;
+
+  const categoryData = CATEGORIES.map((category) => ({
+    name: category,
+    value: expenses
+      .filter((expense) => expense.category === category)
+      .reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
+  })).filter((item) => item.value > 0);
+
+  const chartColors = [
+    "#7565e8",
+    "#45b8ac",
+    "#f4ad57",
+    "#ed7796",
+    "#6199e8",
+    "#9b83c9",
+  ];
+
+  const monthlyData = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - (5 - index));
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    const total = expenses
+      .filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        return (
+          expenseDate.getFullYear() === year &&
+          expenseDate.getMonth() === month
+        );
+      })
+      .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+
+    return {
+      month: date.toLocaleDateString("en-IN", { month: "short" }),
+      spending: total,
+    };
+  });
+
+  const biggestCategory = categoryData.length
+    ? categoryData.reduce((biggest, item) =>
+        item.value > biggest.value ? item : biggest
+      )
+    : null;
+
+  const budgetUsed = pocketMoney > 0
+    ? (totalExpenses / pocketMoney) * 100
+    : 0;
+
+  const budgetProgress = Math.min(budgetUsed, 100);
 
   const filteredExpenses =
     filter === "All"
@@ -289,6 +354,132 @@ function App() {
         </section>
 
         <section className="content-grid">
+          
+        <section className="analytics-grid">
+          <div className="panel chart-panel">
+            <div className="panel-title">
+              <div>
+                <h3>Spending by Category</h3>
+                <p>See which categories use your money.</p>
+              </div>
+              <span className="panel-emoji">📊</span>
+            </div>
+
+            {categoryData.length === 0 ? (
+              <div className="chart-empty">
+                Add your first expense to see the chart.
+              </div>
+            ) : (
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      innerRadius={48}
+                      paddingAngle={3}
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell
+                          key={entry.name}
+                          fill={chartColors[index % chartColors.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => money(value)} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          <div className="panel chart-panel">
+            <div className="panel-title">
+              <div>
+                <h3>Monthly Spending</h3>
+                <p>Your spending over the last six months.</p>
+              </div>
+              <span className="panel-emoji">📈</span>
+            </div>
+
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" />
+                  <YAxis
+                    tickFormatter={(value) =>
+                      value >= 1000
+                        ? `₹${(value / 1000).toFixed(1)}k`
+                        : `₹${value}`
+                    }
+                    width={65}
+                  />
+                  <Tooltip formatter={(value) => money(value)} />
+                  <Bar
+                    dataKey="spending"
+                    name="Expenses"
+                    fill="#7565e8"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="panel insight-panel">
+            <div className="panel-title">
+              <div>
+                <h3>Spending Insights</h3>
+                <p>A quick look at your money habits.</p>
+              </div>
+              <span className="panel-emoji">💡</span>
+            </div>
+
+            <div className="insight-item">
+              <span className="insight-label">Top spending category</span>
+              <strong>
+                {biggestCategory
+                  ? biggestCategory.name
+                  : "No expenses yet"}
+              </strong>
+              <span className="insight-detail">
+                {biggestCategory
+                  ? money(biggestCategory.value)
+                  : "Add an expense to get started."}
+              </span>
+            </div>
+
+            <div className="insight-item">
+              <span className="insight-label">Budget used</span>
+              <strong>{budgetUsed.toFixed(1)}%</strong>
+              <div
+                className="progress-track"
+                role="progressbar"
+                aria-label="Budget used"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(budgetProgress)}
+              >
+                <div
+                  className="progress-fill"
+                  style={{ width: `${budgetProgress}%` }}
+                />
+              </div>
+              <span className="insight-detail">
+                {pocketMoney > 0
+                  ? `${money(Math.max(remainingMoney, 0))} remaining`
+                  : "Set your pocket money to track your budget."}
+              </span>
+            </div>
+          </div>
+        </section>
+
           <div className="panel" id="budget">
             <div className="panel-title">
               <div>
