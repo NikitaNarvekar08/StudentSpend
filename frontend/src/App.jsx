@@ -1,6 +1,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+import Auth from "./Auth";
+import Navbar from "./Navbar";
+import SavingsGoals from "./SavingsGoals";
+import AccountSettings from "./AccountSettings";
 import {
   ResponsiveContainer,
   PieChart,
@@ -29,7 +33,10 @@ const CATEGORIES = [
 
 const today = () => {
   const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
 const emptyForm = {
@@ -58,6 +65,25 @@ function App() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("All");
 
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("studentSpendUser");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  function handleLogin(authData) {
+    localStorage.setItem("studentSpendUser", JSON.stringify(authData));
+    setCurrentUser(authData);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("studentSpendUser");
+    setCurrentUser(null);
+  }
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -77,7 +103,7 @@ function App() {
 
       setPocketMoney(Number(budgetData.pocketMoney) || 0);
       setExpenses(Array.isArray(expenseData) ? expenseData : []);
-    } catch (err) {
+    } catch {
       setError(
         "Unable to load data. Make sure MongoDB and your backend server are running."
       );
@@ -87,8 +113,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (currentUser) {
+      loadData();
+    }
+  }, [currentUser, loadData]);
 
   const totalExpenses = expenses.reduce(
     (total, expense) => total + Number(expense.amount || 0),
@@ -124,6 +152,7 @@ function App() {
     const total = expenses
       .filter((expense) => {
         const expenseDate = new Date(expense.date);
+
         return (
           expenseDate.getFullYear() === year &&
           expenseDate.getMonth() === month
@@ -143,9 +172,8 @@ function App() {
       )
     : null;
 
-  const budgetUsed = pocketMoney > 0
-    ? (totalExpenses / pocketMoney) * 100
-    : 0;
+  const budgetUsed =
+    pocketMoney > 0 ? (totalExpenses / pocketMoney) * 100 : 0;
 
   const budgetProgress = Math.min(budgetUsed, 100);
 
@@ -204,7 +232,11 @@ function App() {
       return;
     }
 
-    if (!form.amount.trim() || !Number.isFinite(amount) || amount <= 0) {
+    if (
+      !form.amount.trim() ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
       setError("Expense amount must be greater than zero.");
       return;
     }
@@ -239,6 +271,7 @@ function App() {
           (a, b) => new Date(b.date) - new Date(a.date)
         )
       );
+
       setForm({ ...emptyForm, date: today() });
       setMessage("Expense added successfully!");
     } catch (err) {
@@ -270,44 +303,39 @@ function App() {
       setExpenses((current) =>
         current.filter((expense) => expense._id !== id)
       );
+
       setMessage("Expense deleted successfully.");
     } catch (err) {
       setError(err.message || "Could not delete expense.");
     }
   }
 
+  // Show login/register until the user signs in.
+  if (!currentUser) {
+    return <Auth onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-icon">₹</span>
-          <span>StudentSpend</span>
-        </div>
-
-        <p className="menu-label">MENU</p>
-        <a className="nav-item active" href="#dashboard">▦ <span>Dashboard</span></a>
-        <a className="nav-item" href="#expenses">↗ <span>Expenses</span></a>
-        <a className="nav-item" href="#budget">◷ <span>Budget</span></a>
-
-        <div className="sidebar-bottom">
-          <div className="avatar">S</div>
-          <div>
-            <strong>Student</strong>
-            <p>My account</p>
-          </div>
-        </div>
-      </aside>
+      {/* New top navigation with Dashboard, Explore and Profile menus */}
+      <Navbar user={currentUser} onLogout={handleLogout} />
 
       <main className="main-content" id="dashboard">
-        <header className="topbar">
+      <header className="topbar" id="overview">
           <div>
             <p className="eyebrow">YOUR MONEY, YOUR CONTROL</p>
-            <h1>Dashboard</h1>
+            <h1>
+              Welcome back
+              {currentUser.user?.name
+                ? `, ${currentUser.user.name}`
+                : ""}!
+            </h1>
             <p className="subtitle">
-              Keep track of your pocket money, one day at a time.
+              Track your spending, manage your budget and achieve your
+              financial goals.
             </p>
           </div>
-          <div className="date-chip">✦ Student Edition</div>
+
         </header>
 
         <section className="welcome-card">
@@ -316,13 +344,24 @@ function App() {
             <h2>Hey, student! 👋</h2>
             <p>Small savings today, bigger goals tomorrow.</p>
           </div>
+
           <div className="welcome-art">₹</div>
         </section>
 
-        {error && <p className="feedback error-message" role="alert">{error}</p>}
-        {message && <p className="feedback" role="status">{message}</p>}
+        {error && (
+          <p className="feedback error-message" role="alert">
+            {error}
+          </p>
+        )}
 
-        <section className="summary-grid">
+        {message && (
+          <p className="feedback" role="status">
+            {message}
+          </p>
+        )}
+
+        {/* Dashboard overview cards */}
+        <section className="summary-grid" id="overview">
           <div className="summary-card balance-card">
             <div className="card-heading">
               <span>Total Pocket Money</span>
@@ -338,7 +377,9 @@ function App() {
               <span className="card-icon">↗</span>
             </div>
             <h2>{loading ? "Loading..." : money(totalExpenses)}</h2>
-            <p className="card-note">{expenses.length} recorded expenses</p>
+            <p className="card-note">
+              {expenses.length} recorded expenses
+            </p>
           </div>
 
           <div className="summary-card">
@@ -348,138 +389,178 @@ function App() {
             </div>
             <h2>{loading ? "Loading..." : money(remainingMoney)}</h2>
             <p className="card-note">
-              {remainingMoney < 0 ? "You are over your budget" : "Pocket money minus expenses"}
+              {remainingMoney < 0
+                ? "You are over your budget"
+                : "Pocket money minus expenses"}
             </p>
           </div>
         </section>
 
+        {pocketMoney > 0 && remainingMoney <= 200 && (
+          <div
+            role="status"
+            className="feedback error-message"
+            style={{
+              margin: "0 0 20px",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              background: "#fff1f2",
+              border: "1px solid #fecdd3",
+              color: "#be123c",
+            }}
+          >
+            {remainingMoney <= 0
+              ? "You have reached or exceeded your pocket-money budget. Review your expenses."
+              : `Low balance warning: only ${money(remainingMoney)} remains.`}
+          </div>
+        )}
+
+        {/* Charts, insights, budget and expense form */}
         <section className="content-grid">
-          
-        <section className="analytics-grid">
-          <div className="panel chart-panel">
-            <div className="panel-title">
-              <div>
-                <h3>Spending by Category</h3>
-                <p>See which categories use your money.</p>
+          <section className="analytics-grid">
+            <div className="panel chart-panel">
+              <div className="panel-title">
+                <div>
+                  <h3>Spending by Category</h3>
+                  <p>See which categories use your money.</p>
+                </div>
+                <span className="panel-emoji">📊</span>
               </div>
-              <span className="panel-emoji">📊</span>
+
+              {categoryData.length === 0 ? (
+                <div className="chart-empty">
+                  Add your first expense to see the chart.
+                </div>
+              ) : (
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        innerRadius={48}
+                        paddingAngle={3}
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell
+                            key={entry.name}
+                            fill={
+                              chartColors[index % chartColors.length]
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => money(value)} />
+                      <Legend
+                        verticalAlign="middle"
+                        align="right"
+                        layout="vertical"
+                        formatter={(value) => (
+                          <span style={{ color: "#34416f", fontSize: "12px" }}>
+                            {value}
+                          </span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
-            {categoryData.length === 0 ? (
-              <div className="chart-empty">
-                Add your first expense to see the chart.
+            <div className="panel chart-panel">
+              <div className="panel-title">
+                <div>
+                  <h3>Monthly Spending</h3>
+                  <p>Your spending over the last six months.</p>
+                </div>
+                <span className="panel-emoji">📈</span>
               </div>
-            ) : (
+
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={90}
-                      innerRadius={48}
-                      paddingAngle={3}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell
-                          key={entry.name}
-                          fill={chartColors[index % chartColors.length]}
-                        />
-                      ))}
-                    </Pie>
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
+                    <XAxis dataKey="month" />
+                    <YAxis
+                      tickFormatter={(value) =>
+                        value >= 1000
+                          ? `₹${(value / 1000).toFixed(1)}k`
+                          : `₹${value}`
+                      }
+                      width={65}
+                    />
                     <Tooltip formatter={(value) => money(value)} />
-                    <Legend />
-                  </PieChart>
+                    <Bar
+                      dataKey="spending"
+                      name="Expenses"
+                      fill="#7565e8"
+                      radius={[6, 6, 0, 0]}
+                    />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
-            )}
-          </div>
+            </div>
 
-          <div className="panel chart-panel">
-            <div className="panel-title">
-              <div>
-                <h3>Monthly Spending</h3>
-                <p>Your spending over the last six months.</p>
+            <div className="panel insight-panel">
+              <div className="panel-title">
+                <div>
+                  <h3>Spending Insights</h3>
+                  <p>A quick look at your money habits.</p>
+                </div>
+                <span className="panel-emoji">💡</span>
               </div>
-              <span className="panel-emoji">📈</span>
-            </div>
 
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="month" />
-                  <YAxis
-                    tickFormatter={(value) =>
-                      value >= 1000
-                        ? `₹${(value / 1000).toFixed(1)}k`
-                        : `₹${value}`
-                    }
-                    width={65}
-                  />
-                  <Tooltip formatter={(value) => money(value)} />
-                  <Bar
-                    dataKey="spending"
-                    name="Expenses"
-                    fill="#7565e8"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="panel insight-panel">
-            <div className="panel-title">
-              <div>
-                <h3>Spending Insights</h3>
-                <p>A quick look at your money habits.</p>
+              <div className="insight-item">
+                <span className="insight-label">
+                  Top spending category
+                </span>
+                <strong>
+                  {biggestCategory
+                    ? biggestCategory.name
+                    : "No expenses yet"}
+                </strong>
+                <span className="insight-detail">
+                  {biggestCategory
+                    ? money(biggestCategory.value)
+                    : "Add an expense to get started."}
+                </span>
               </div>
-              <span className="panel-emoji">💡</span>
-            </div>
 
-            <div className="insight-item">
-              <span className="insight-label">Top spending category</span>
-              <strong>
-                {biggestCategory
-                  ? biggestCategory.name
-                  : "No expenses yet"}
-              </strong>
-              <span className="insight-detail">
-                {biggestCategory
-                  ? money(biggestCategory.value)
-                  : "Add an expense to get started."}
-              </span>
-            </div>
+              <div className="insight-item">
+                <span className="insight-label">Budget used</span>
+                <strong>{budgetUsed.toFixed(1)}%</strong>
 
-            <div className="insight-item">
-              <span className="insight-label">Budget used</span>
-              <strong>{budgetUsed.toFixed(1)}%</strong>
-              <div
-                className="progress-track"
-                role="progressbar"
-                aria-label="Budget used"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(budgetProgress)}
-              >
                 <div
-                  className="progress-fill"
-                  style={{ width: `${budgetProgress}%` }}
-                />
-              </div>
-              <span className="insight-detail">
-                {pocketMoney > 0
-                  ? `${money(Math.max(remainingMoney, 0))} remaining`
-                  : "Set your pocket money to track your budget."}
-              </span>
-            </div>
-          </div>
-        </section>
+                  className="progress-track"
+                  role="progressbar"
+                  aria-label="Budget used"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(budgetProgress)}
+                >
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${budgetProgress}%` }}
+                  />
+                </div>
 
+                <span className="insight-detail">
+                  {pocketMoney > 0
+                    ? `${money(Math.max(remainingMoney, 0))} remaining`
+                    : "Set your pocket money to track your budget."}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Budget submenu destination */}
           <div className="panel" id="budget">
             <div className="panel-title">
               <div>
@@ -490,7 +571,10 @@ function App() {
             </div>
 
             <form onSubmit={updateBudget} className="budget-panel">
-              <label htmlFor="newBudget">Pocket money amount (₹)</label>
+              <label htmlFor="newBudget">
+                Pocket money amount (₹)
+              </label>
+
               <input
                 id="newBudget"
                 type="number"
@@ -500,6 +584,7 @@ function App() {
                 value={newBudget}
                 onChange={(event) => setNewBudget(event.target.value)}
               />
+
               <button type="submit" disabled={loading}>
                 Save Pocket Money <span>→</span>
               </button>
@@ -550,7 +635,9 @@ function App() {
                 }
               >
                 {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
 
@@ -565,26 +652,39 @@ function App() {
                 }
               />
 
-              <button type="submit" disabled={savingExpense || loading}>
-                {savingExpense ? "Saving..." : "Add Expense"} <span>＋</span>
+              <button
+                type="submit"
+                disabled={savingExpense || loading}
+              >
+                {savingExpense ? "Saving..." : "Add Expense"}{" "}
+                <span>＋</span>
               </button>
             </form>
           </div>
         </section>
 
+        {/* Expenses submenu destination */}
         <section className="panel expense-history" id="expenses">
           <div className="panel-title history-heading">
             <div>
-              <h3>Expense History</h3>
-              <p>Your recorded spending, newest first.</p>
+              <h3>Recent Expenses</h3>
+              <p>Your latest recorded transactions.</p>
             </div>
-            <button className="secondary-button" type="button" onClick={loadData}>
+
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={loadData}
+            >
               ↻ Refresh
             </button>
           </div>
 
           <div className="filter-row">
-            <label htmlFor="categoryFilter">Filter by category</label>
+            <label htmlFor="categoryFilter">
+              Filter by category
+            </label>
+
             <select
               id="categoryFilter"
               value={filter}
@@ -592,7 +692,9 @@ function App() {
             >
               <option value="All">All categories</option>
               {CATEGORIES.map((category) => (
-                <option key={category} value={category}>{category}</option>
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
           </div>
@@ -610,20 +712,29 @@ function App() {
               <table className="expense-table">
                 <thead>
                   <tr>
-                    <th>Expense</th>
-                    <th>Category</th>
                     <th>Date</th>
+                    <th>Title</th>
+                    <th>Category</th>
                     <th>Amount</th>
                     <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredExpenses.map((expense) => (
                     <tr key={expense._id}>
+                      <td>
+                        {new Date(expense.date).toLocaleDateString("en-IN")}
+                      </td>
                       <td>{expense.title}</td>
-                      <td><span className="category-pill">{expense.category}</span></td>
-                      <td>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
-                      <td className="amount-cell">{money(expense.amount)}</td>
+                      <td>
+                        <span className="category-pill">
+                          {expense.category}
+                        </span>
+                      </td>
+                      <td className="amount-cell">
+                        {money(expense.amount)}
+                      </td>
                       <td>
                         <button
                           className="delete-button"
@@ -642,7 +753,84 @@ function App() {
           )}
         </section>
 
-        <footer>Made for student life, with ♥ · StudentSpend</footer>
+        {/* Savings Goals submenu destination */}
+       <div id="savings-goals">
+        <SavingsGoals />
+        </div>
+
+        {/* Explore submenu: About */}
+        <section id="about" className="info-section">
+          <p className="info-eyebrow">ABOUT STUDENTSPEND</p>
+          <h2>Take control of your money</h2>
+          <p>
+            StudentSpend is a student-focused expense tracking and
+            budgeting application. It helps students manage pocket
+            money, understand spending habits, and work towards savings
+            goals in one place.
+          </p>
+
+          <div className="info-feature-grid">
+            <article>
+              <h3>Expense Tracking</h3>
+              <p>
+                Record expenses and organise them by category.
+              </p>
+            </article>
+
+            <article>
+              <h3>Budget Management</h3>
+              <p>
+                Manage pocket money and monitor your remaining balance.
+              </p>
+            </article>
+
+            <article>
+              <h3>Savings Goals</h3>
+              <p>
+                Set savings targets and track your progress.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        {/* Explore submenu: Overview */}
+        <section id="how-it-works" className="info-section">
+          <p className="info-eyebrow">OVERVIEW</p>
+          <h2>How StudentSpend works</h2>
+
+          <ol>
+            <li>Set your pocket money budget.</li>
+            <li>Add expenses with their amount, date, and category.</li>
+            <li>View your total spending and remaining balance.</li>
+            <li>Use charts and insights to understand spending habits.</li>
+            <li>Create savings goals and track your progress.</li>
+          </ol>
+        </section>
+
+        {/* Profile submenu destinations */}
+        <section id="profile" className="info-section">
+          <p className="info-eyebrow">MY ACCOUNT</p>
+          <h2>My Profile</h2>
+          <p>
+            {currentUser.user?.name
+              ? `Name: ${currentUser.user.name}`
+              : "Your StudentSpend account"}
+          </p>
+          <p>
+            {currentUser.user?.email
+              ? `Email: ${currentUser.user.email}`
+              : ""}
+          </p>
+        </section>
+
+       <section
+  id="account-settings"
+  className="account-settings-anchor"
+>
+  <AccountSettings user={currentUser} />
+</section>
+
+      <footer>Made for student life, with ♥ · StudentSpend</footer>
       </main>
     </div>
   );

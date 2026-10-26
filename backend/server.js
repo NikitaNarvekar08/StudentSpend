@@ -6,7 +6,8 @@ require("dotenv").config();
 
 const budgetRoutes = require("./routes/budgetRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
-
+const savingsGoalRoutes = require("./routes/savingsGoalRoutes");
+const authRoutes = require("./routes/authRoutes");
 const app = express();
 
 // Middleware
@@ -21,7 +22,8 @@ app.get("/", (req, res) => {
 // API routes
 app.use("/api/budget", budgetRoutes);
 app.use("/api/expenses", expenseRoutes);
-
+app.use("/api/savings-goals", savingsGoalRoutes);
+app.use("/api/auth", authRoutes);
 // Database test route
 app.get("/api/test-db", async (req, res) => {
   try {
